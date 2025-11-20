@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Todo Management</title>
+  <style>
+    body { font-family: Arial; max-width: 700px; margin: 20px auto; padding: 20px; background: #f4f4f4; }
+    h1 { text-align: center; color: #333; }
+    input, textarea { width: 100%; padding: 8px; margin: 5px 0; }
+    button { padding: 8px 12px; margin: 5px; cursor: pointer; border: none; border-radius: 4px; }
+    .add-btn { background-color: #007bff; color: white; }
+    .del-btn { background-color: #dc3545; color: white; }
+    .todo { background: white; padding: 10px; margin-top: 10px; border-radius: 6px; }
+    .logout { background:#6c757d; color:#fff; float:right; }
+  </style>
+</head>
+<body>
+  <h1>Todo Management</h1>
+  <button class="logout" onclick="logout()">Logout</button>
+
+  <div>
+    <input type="text" id="title" placeholder="Title">
+    <textarea id="desc" placeholder="Description"></textarea>
+    <button class="add-btn" onclick="createTodo()">Add Todo</button>
+  </div>
+
+  <div id="todos"></div>
+
+  <script>
+    const API = "http://127.0.0.1:8080/api/todos";
+    const user = localStorage.getItem("user");
+    if (!user) {
+      alert("Please login first!");
+      window.location.href = "login.html";
+    }
+
+    async function loadTodos() {
+      const res = await fetch(API);
+      const todos = await res.json();
+      const list = document.getElementById("todos");
+      list.innerHTML = "";
+      todos.forEach(t => {
+        const div = document.createElement("div");
+        div.className = "todo";
+        div.innerHTML = `
+          <h3>${t.title}</h3>
+          <p>${t.description}</p>
+          <button onclick="deleteTodo('${t.id}')" class="del-btn">Delete</button>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    async function createTodo() {
+      const title = document.getElementById("title").value.trim();
+      const description = document.getElementById("desc").value.trim();
+      if (!title) return alert("Title required");
+
+      await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, description })
+      });
+      document.getElementById("title").value = "";
+      document.getElementById("desc").value = "";
+      loadTodos();
+    }
+
+    async function deleteTodo(id) {
+      if (!confirm("Delete this todo?")) return;
+      await fetch(`${API}/${id}`, { method: "DELETE" });
+      loadTodos();
+    }
+
+    function logout() {
+      localStorage.removeItem("user");
+      window.location.href = "login.html";
+    }
+
+    loadTodos();
+  </script>
+</body>
+</html>
